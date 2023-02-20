@@ -314,6 +314,12 @@ impl SignatureContext<'_> {
                 sig_v4::create_canonical_request(method, uri_path, query_strings, &headers, payload)
             } else if matches!(amz_content_sha256, Some(AmzContentSha256::UnsignedPayload)) {
                 sig_v4::create_canonical_request(method, uri_path, query_strings, &headers, sig_v4::Payload::Unsigned)
+            } else if self.content_length.unwrap_or(0) == 0 {
+                sig_v4::create_canonical_request(method, uri_path, query_strings, &headers, sig_v4::Payload::Empty)
+            } else if let Some(amz_content_sha256) = amz_content_sha256 {
+                // use the amz_content_sha256 if provided to skip content hash calculation for signature
+                let payload = sig_v4::Payload::ContentHash(amz_content_sha256);
+                sig_v4::create_canonical_request(method, uri_path, query_strings, &headers, payload)
             } else {
                 let bytes = super::extract_full_body(self.content_length, self.req_body).await?;
                 if bytes.len() < 1024 {

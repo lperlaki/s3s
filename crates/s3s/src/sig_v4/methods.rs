@@ -1,5 +1,6 @@
 //! Signature v4 methods
 
+use super::AmzContentSha256;
 use super::AmzDate;
 
 use crate::auth::SecretKey;
@@ -79,6 +80,7 @@ pub enum Payload<'a> {
     SingleChunk(&'a [u8]),
     /// multiple chunks
     MultipleChunks,
+    ContentHash(AmzContentSha256<'a>),
 }
 
 /// create canonical request
@@ -173,10 +175,13 @@ pub fn create_canonical_request(
     {
         // <HashedPayload>
         match payload {
-            Payload::Unsigned => ans.push_str("UNSIGNED-PAYLOAD"),
+            Payload::Unsigned | Payload::ContentHash(AmzContentSha256::UnsignedPayload) => ans.push_str("UNSIGNED-PAYLOAD"),
             Payload::Empty => ans.push_str(EMPTY_STRING_SHA256_HASH),
             Payload::SingleChunk(data) => hex_sha256(data, |s| ans.push_str(s)),
-            Payload::MultipleChunks => ans.push_str("STREAMING-AWS4-HMAC-SHA256-PAYLOAD"),
+            Payload::MultipleChunks | Payload::ContentHash(AmzContentSha256::MultipleChunks) => {
+                ans.push_str("STREAMING-AWS4-HMAC-SHA256-PAYLOAD")
+            }
+            Payload::ContentHash(AmzContentSha256::SingleChunk { payload_checksum }) => ans.push_str(payload_checksum),
         }
     }
 
