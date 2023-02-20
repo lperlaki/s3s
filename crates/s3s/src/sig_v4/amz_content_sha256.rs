@@ -5,7 +5,7 @@ use crate::utils::crypto::is_sha256_checksum;
 /// x-amz-content-sha256
 ///
 /// See [Common Request Headers](https://docs.aws.amazon.com/AmazonS3/latest/API/RESTCommonRequestHeaders.html)
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum AmzContentSha256<'a> {
     /// `STREAMING-AWS4-HMAC-SHA256-PAYLOAD`
     MultipleChunks,
