@@ -278,25 +278,11 @@ impl SignatureContext<'_> {
                 sig_v4::create_canonical_request(method, uri_path, query_strings, &headers, payload)
             } else if matches!(amz_content_sha256, AmzContentSha256::UnsignedPayload) {
                 sig_v4::create_canonical_request(method, uri_path, query_strings, &headers, sig_v4::Payload::Unsigned)
+            } else if self.content_length.unwrap_or(0) == 0 {
+                sig_v4::create_canonical_request(method, uri_path, query_strings, &headers, sig_v4::Payload::Empty)
             } else {
-                let bytes = super::extract_full_body(self.content_length, self.req_body).await?;
-                if bytes.len() < 1024 {
-                    debug!(len=?bytes.len(), body=?bytes, "extracted full body");
-                } else {
-                    debug!(len=?bytes.len(), "extracted full body");
-                }
-
-                if bytes.is_empty() {
-                    sig_v4::create_canonical_request(method, uri_path, query_strings, &headers, sig_v4::Payload::Empty)
-                } else {
-                    sig_v4::create_canonical_request(
-                        method,
-                        uri_path,
-                        query_strings,
-                        &headers,
-                        sig_v4::Payload::SingleChunk(&bytes),
-                    )
-                }
+                let payload = sig_v4::Payload::ContentHash(amz_content_sha256);
+                sig_v4::create_canonical_request(method, uri_path, query_strings, &headers, payload)
             };
 
             let region = authorization.credential.aws_region;
