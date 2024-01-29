@@ -16,6 +16,20 @@ pub struct S3Response<T> {
     pub extensions: Extensions,
 }
 
+impl<T: std::fmt::Debug> std::fmt::Debug for S3Response<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut builder = f.debug_struct("S3Response");
+        builder.field("output", &self.output);
+        if !self.headers.is_empty() {
+            builder.field("headers", &self.headers);
+        }
+        if !self.extensions.is_empty() {
+            builder.field("extensions", &self.extensions);
+        }
+        builder.finish_non_exhaustive()
+    }
+}
+
 impl<T> S3Response<T> {
     pub fn new(output: T) -> Self {
         Self {
